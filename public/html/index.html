@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>demo</title>
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+  </head>
+  <body>
+    <script>
+      var dataSet = [];
+      // read data
+      function readData() {
+        fetch("../data/adb_ram_infos").then(
+          function (res) {
+            if (res.ok) {
+              res.text().then(function (data) {
+                // console.log(data);
+                //处理数据
+                var dataArr = data.split("\n");
+
+                for (i = 0; i < dataArr.length; i++) {
+                  dataArr[i] = dataArr[i].substring(8).trim();
+                  var itemLength = dataArr[i].length;
+                  dataArr[i] = dataArr[i].substring(0, itemLength - 3);
+                  console.log(dataArr[i].toString());
+                }
+                dataSet = dataArr;
+                // 将data打在公屏上
+                // var info = dataArr.toString();
+                document.getElementById("data").innerText = dataArr[1];
+              });
+            } else {
+              console.log("failed, got status", res.status);
+            }
+          },
+          function (e) {
+            console.log("Fetch failed!", e);
+          }
+        );
+      }
+    </script>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+    <div id="main" style="width: 800px; height: 600px;"></div>
+    <div id="data">Hello world</div>
+    <script type="text/javascript">
+      // 基于准备好的dom，初始化echarts实例
+      var myChart = echarts.init(document.getElementById("main"));
+
+      // 指定图表的配置项和数据
+      var time = [];
+      var count = 0;
+      var option = {
+        title: {
+          text: "X990 RAM",
+        },
+        xAxis: {
+          type: "category",
+          boundaryGap: false,
+          data: time,
+        },
+        yAxis: {
+          boundaryGap: [0, "50%"],
+          type: "value",
+          max: '922220',
+        },
+        tooltip:{},
+        series: [
+          {
+            name: "RAM Free",
+            type: "line",
+            smooth: true,
+            stack: "a",
+            areaStyle: {
+              normal: {},
+            },
+            data: dataSet,
+          },
+        ],
+      };
+
+      myChart.setOption(option);
+
+      function addData(shift) {
+        count++;
+        // console.log(count);
+        time.push(count+"s");
+
+        if (shift) {
+          if(time.length > 30){
+            time.shift();
+          }
+          dataSet.shift();
+        }
+      }
+
+      // 每秒刷新图表
+      setInterval(function () {
+        readData();
+        addData(true);
+        myChart.setOption({
+          xAxis: {
+            data: time
+          },
+          series: [
+            {
+              name: "RAM Free",
+              data: dataSet,
+            },
+          ],
+        });
+        console.log(time.toString());
+      }, 1000);
+    </script>
+  </body>
+</html>
